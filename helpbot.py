@@ -3,10 +3,10 @@ import time
 import logging
 from datetime import datetime
 from mytoken import token
+from blocks import http_403
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from db import Usage, Base
-
 
 class HelpBot(object):
     def __init__(self):
@@ -24,12 +24,18 @@ class HelpBot(object):
 
     """ Slack Calls"""
 
-    def post_message(self, message, thread_ts=None):
+    def post_message(self, message, thread_ts=None, blocks=None):
         # Post a message as a thread to a message
-        if thread_ts is not None:
+        if thread_ts is not None and blocks is None:
             self.slack_client.chat_postMessage(
                 channel='#' + self.mychannel,
                 text=message,
+                thread_ts=thread_ts
+            )
+        elif  thread_ts is not None and blocks is not None:
+            self.slack_client.chat_postMessage(
+                channel='#' + self.mychannel,
+                blocks=blocks,
                 thread_ts=thread_ts
             )
         # Post a message as a normal message
@@ -73,8 +79,8 @@ class HelpBot(object):
         used = False
         if message['text']:
             message_text = message['text']
-            if '404' in message_text:
-                self.post_message('You Failed', thread_ts=message['ts'])
+            if 'NetApp API failed. Reason - 403:Forbidden' in message_text:
+                self.post_message(None, thread_ts=message['ts'], blocks=http_403)
                 used = True
         if used:
             self.record_metrics(message)

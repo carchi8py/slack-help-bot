@@ -8,6 +8,7 @@ This is a project to create a simple help bot in slack for the ansible module i 
 * channels:read
 * chat:write
 * users:read
+* users:read:email
 
 ## Versions
 * 0.1 Write a message to Slack channel

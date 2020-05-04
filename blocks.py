@@ -20,7 +20,7 @@ http_403 = """
 					"text": "Create new Bug Report",
 					"emoji": true
 				},
-				"value": "click_me_123"
+				"value": "bug_report"
 			}
 		}
 	]

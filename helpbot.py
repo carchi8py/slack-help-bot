@@ -3,10 +3,11 @@ import time
 import logging
 from datetime import datetime
 from mytoken import token
-from blocks import http_403
+from blocks import http_403, console_permission, unexpected_error
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from db import Usage, Base
+
 
 class HelpBot(object):
     def __init__(self):
@@ -57,7 +58,7 @@ class HelpBot(object):
         if oldest is not None:
             return self.slack_client.conversations_history(channel=self.channel_id, oldest=str(oldest))
         else:
-            return self.slack_client.conversations_history(channel=self.channel_id)
+            return self.slack_client.conversations_history(channel=self.channel_id, limit=3)
 
     def get_user(self, user_id):
         return self.slack_client.users_info(user=user_id)
@@ -79,8 +80,17 @@ class HelpBot(object):
         used = False
         if message['text']:
             message_text = message['text']
+            # 403 Message
             if 'NetApp API failed. Reason - 403:Forbidden' in message_text:
                 self.post_message(None, thread_ts=message['ts'], blocks=http_403)
+                used = True
+            # console permission missing
+            # TODO: Add command to add console permissions
+            if "<cli-output/><cli-result-value>0</cli-result-value></results>" in message_text:
+                self.post_message(None, thread_ts=message['ts'], blocks=console_permission)
+                used = True
+            if "NetApp API failed. Reason - Unexpected error" in message_text:
+                self.post_message(None, thread_ts=message['ts'], blocks=unexpected_error)
                 used = True
         if used:
             self.record_metrics(message)
@@ -93,6 +103,7 @@ class HelpBot(object):
 
     def run(self):
         now = time.time()
+        logging.info(str(self.get_channel_history()))
         while True:
             history = self.get_channel_history(now)
             logging.info(str(history))
